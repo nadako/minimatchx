@@ -303,6 +303,36 @@ class Patterns {
 				item('[a-0][a-\u0100]', [])
 			]
 		},
+		{
+			info: 'https://github.com/isaacs/minimatch/issues/68',
+			files: ['testjson.json'],
+			items: [
+				item('*(*.json|!(*.js))', ['testjson.json']),
+				item('+(*.json|!(*.js))', ['testjson.json']),
+				item('@(*.json|!(*.js))', ['testjson.json']),
+				item('?(*.json|!(*.js))', ['testjson.json']),
+			]
+		},
+		{
+			info: 'https://github.com/isaacs/minimatch/issues/68',
+			files: ['foojs.js'],
+			items: [
+				item('*(*.json|!(*.js))', []), // XXX bash 4.3 disagrees!
+				item('+(*.json|!(*.js))', []), // XXX bash 4.3 disagrees!
+				item('@(*.json|!(*.js))', []),
+				item('?(*.json|!(*.js))', []),
+			]
+		},
+		{
+			info: 'https://github.com/isaacs/minimatch/issues/68',
+			files: ['other.bar'],
+			items: [
+				item('*(*.json|!(*.js))', ['other.bar']),
+				item('+(*.json|!(*.js))', ['other.bar']),
+				item('@(*.json|!(*.js))', ['other.bar']),
+				item('?(*.json|!(*.js))', ['other.bar']),
+			]
+		}
 	];
 
 	static public var regexps = [
