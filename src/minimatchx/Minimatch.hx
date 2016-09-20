@@ -364,7 +364,7 @@ class Minimatch {
 	static var reSpecials = charSet("().*{}+?[]^$\\!");
 
 	static function charSet(s:String):Map<String, Bool> {
-		return 
+		return
 			[
 				for (i in 0...s.length)
 				s.charAt(i) => true
@@ -873,11 +873,23 @@ class Minimatch {
 			var nlFirst = re.substring(nl.reStart, nl.reEnd - 8);
 			var nlLast = re.substring(nl.reEnd - 8, nl.reEnd);
 			var nlAfter = re.substring(nl.reEnd);
+
+			nlLast += nlAfter;
+
+			// Handle nested stuff like *(*.js|!(*.json)), where open parens
+			// mean that we should *not* include the ) in the bit that is considered
+			// "after" the negated section.
+			var openParensBefore = nlBefore.split('(').length - 1;
+			var cleanAfter = nlAfter;
+			for (i in 0...openParensBefore)
+				cleanAfter = ~/\)[+*?]?/.replace(cleanAfter, '');
+			nlAfter = cleanAfter;
+
 			var dollar = '';
 			if (nlAfter == '' && !isSub) {
 				dollar = '$';
 			}
-			var newRe = nlBefore + nlFirst + nlAfter + dollar + nlLast + nlAfter;
+			var newRe = nlBefore + nlFirst + nlAfter + dollar + nlLast;
 			re = newRe;
 
 			n--;
