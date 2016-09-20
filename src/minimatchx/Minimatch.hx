@@ -335,6 +335,14 @@ class Minimatch {
 		throw 'wtf?';
 	}
 
+	static var plTypes = [
+		'!' => { open: '(?:(?!(?:', close: '))[^/]*?)'},
+		'?' => { open: '(?:', close: ')?' },
+		'+' => { open: '(?:', close: ')+' },
+		'*' => { open: '(?:', close: ')*' },
+		'@' => { open: '(?:', close: ')' }
+	];
+
 	/**
 		any single thing other than /
 	*/
@@ -511,9 +519,10 @@ class Minimatch {
 			start:Int,
 			reStart:Int,
 			reEnd:Int,
+			open:String,
+			close:String,
 		}> = [];
 		var negativeLists:Array<Dynamic> = [];
-		var plType;
 		var stateChar:Null<String> = null;
 		var inClass = false;
 		var reClassStart = -1;
@@ -608,12 +617,13 @@ class Minimatch {
 						continue;
 					}
 
-					plType = stateChar;
 					patternListStack.push({
-						type: plType,
+						type: stateChar,
 						start: i - 1,
 						reStart: re.length,
 						reEnd: -1,
+						open: plTypes[stateChar].open,
+						close: plTypes[stateChar].close
 					});
 					// negation is (?:(?!js)[^/]*)
 					re += stateChar == '!' ? '(?:(?!(?:' : '(?:';
@@ -629,20 +639,13 @@ class Minimatch {
 
 					clearStateChar();
 					hasMagic = true;
-					re += ')';
 					var pl = patternListStack.pop();
-					plType = pl.type;
 					// negation is (?:(?!js)[^/]*)
 					// The others are (?:<pattern>)<type>
-					switch (plType) {
-						case '!':
-							negativeLists.push(pl);
-							re += ')[^/]*?)';
-							pl.reEnd = re.length;
-						case '?', '+', '*':
-							re += plType;
-						case '@': // the default anyway
-					}
+					re += pl.close;
+					if (pl.type == "!")
+						negativeLists.push(pl);
+					pl.reEnd = re.length;
 					continue;
 
 				case '|':
@@ -821,7 +824,8 @@ class Minimatch {
 		// | chars that were already escaped.
 		var pl;
 		while ((pl = patternListStack.pop()) != null) {
-			var tail = re.substring(pl.reStart + 3);
+			var tail = re.substring(pl.reStart + pl.open.length);
+			debug('setting tail $re $pl');
 			// maybe some even number of \, then maybe 1 \, followed by a |
 			tail = ~/((?:\\{2}){0,64})(\\?)\|/g.map(tail, function (re:EReg):String {
 				var _1 = re.matched(1);
@@ -840,7 +844,7 @@ class Minimatch {
 				return _1 + _1 + _2 + '|';
 			});
 
-			debug('tail=$tail');
+			debug('tail=$tail\n   $pl $re');
 			var t = pl.type == '*' ? star
 				: pl.type == '?' ? qmark
 				: '\\' + pl.type;
