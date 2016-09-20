@@ -85,7 +85,7 @@ class BraceExpansion {
 		var isOptions = ~/^(.*,)+(.+)?$/.match(m.body);
 		if (!isSequence && !isOptions) {
 			// {a},b}
-			if (~/,.*}/.match(m.post)) {
+			if (~/,.*\}/.match(m.post)) {
 				str = m.pre + '{' + m.body + escClose + m.post;
 				return _expand(str);
 			}
