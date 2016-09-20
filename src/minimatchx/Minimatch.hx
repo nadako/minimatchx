@@ -493,6 +493,9 @@ class Minimatch {
 	}
 
 	function parse(pattern:String, isSub:Bool = false):Part {
+		if (pattern.length > 1024 * 64)
+			throw 'pattern is too long';
+
 		var options = this.options;
 
 		// shortcuts
@@ -820,7 +823,7 @@ class Minimatch {
 		while ((pl = patternListStack.pop()) != null) {
 			var tail = re.substring(pl.reStart + 3);
 			// maybe some even number of \, then maybe 1 \, followed by a |
-			tail = ~/((?:\\{2})*)(\\?)\|/g.map(tail, function (re:EReg):String {
+			tail = ~/((?:\\{2}){0,64})(\\?)\|/g.map(tail, function (re:EReg):String {
 				var _1 = re.matched(1);
 				var _2 = re.matched(2);
 				if (_2 == "") {
@@ -921,6 +924,16 @@ class Minimatch {
 		var flags = options.nocase == true ? 'i' : '';
 		var regExp = new EReg('^' + re + '$', flags);
 
+		var regExp =
+			try {
+				new EReg('^' + re + '$', flags);
+			} catch (_:Dynamic) {
+				// If it was an invalid regular expression, then it can't match
+				// anything.  This trick looks for a character after the end of
+				// the string, which is of course impossible, except in multi-line
+				// mode, but it's not a /m regex.
+				new EReg('$.', "");
+			}
 		// regExp._glob = pattern;
 		// regExp._src = re;
 
